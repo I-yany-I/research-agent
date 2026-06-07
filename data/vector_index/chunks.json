@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Transformer 模型架构",
+    "text": "Transformer 是一种基于自注意力机制的神经网络架构，由 Vaswani 等人在 2017 年提出。\n核心组件包括：多头自注意力（Multi-Head Self-Attention）、位置编码（Positional Encoding）、\n前馈网络（Feed-Forward Network）和层归一化（Layer Normalization）。",
+    "source": "builtin"
+  },
+  {
+    "title": "Transformer 模型架构",
+    "text": "Transformer 彻底取代了 RNN/LSTM 在序列建模中的主导地位，成为现代大语言模型的基础架构。\nBERT、GPT、T5 等模型均基于 Transformer 架构。",
+    "source": "builtin"
+  },
+  {
+    "title": "Transformer 模型架构",
+    "text": "自注意力机制的计算公式为：Attention(Q,K,V) = softmax(QK^T/√d_k)V。\n多头注意力将 Q、K、V 分别投影到 h 个不同的子空间，并行计算注意力，再拼接结果。",
+    "source": "builtin"
+  },
+  {
+    "title": "LoRA 低秩适配",
+    "text": "LoRA（Low-Rank Adaptation）是一种参数高效的微调方法，由 Hu 等人在 2021 年提出。\n核心思想：冻结预训练模型的原始权重，在特定层旁路添加低秩分解矩阵（A 和 B），\n仅训练这些低秩矩阵，从而大幅减少可训练参数。",
+    "source": "builtin"
+  },
+  {
+    "title": "LoRA 低秩适配",
+    "text": "典型的 LoRA 配置：rank r=8~16，alpha=16~32，target_modules 包含注意力层的 q、k、v、o 投影\n以及 FFN 层的 gate、up、down 投影。",
+    "source": "builtin"
+  },
+  {
+    "title": "LoRA 低秩适配",
+    "text": "QLoRA 进一步引入 4-bit NormalFloat 量化，使单个 7B 模型的微调在消费级 GPU（如 RTX 3060 8GB）上可运行。\n训练完成后，adapter 权重可合并回基座模型（merge_and_unload），不增加推理延迟。",
+    "source": "builtin"
+  },
+  {
+    "title": "RAG 检索增强生成",
+    "text": "RAG（Retrieval-Augmented Generation）是一种将信息检索与文本生成结合的架构。\n核心流程：用户提问 → 从知识库检索相关文档片段 → 将检索结果作为上下文注入 LLM Prompt → LLM 生成回答。",
+    "source": "builtin"
+  },
+  {
+    "title": "RAG 检索增强生成",
+    "text": "RAG 的主要优势：\n1. 知识可更新：无需重新训练模型，更新知识库即可。\n2. 可溯源：回答可附带引用来源，降低幻觉风险。\n3. 领域适配：可针对特定领域建库，通用 LLM 也能回答专业问题。",
+    "source": "builtin"
+  },
+  {
+    "title": "RAG 检索增强生成",
+    "text": "常见检索策略：BM25（稀疏/关键词）、Dense Retrieval（稠密/语义向量）、混合检索 + RRF 融合。\n精排常用 Cross-Encoder（如 BERT-based reranker）对候选片段做深度相关性判断。",
+    "source": "builtin"
+  },
+  {
+    "title": "LangGraph Agent 框架",
+    "text": "LangGraph 是 LangChain 团队开发的 Agent 编排框架，基于有向图（StateGraph）定义 Agent 的控制流。\n核心理念：将 Agent 的行为建模为节点（Node）和边（Edge）组成的状态机。",
+    "source": "builtin"
+  },
+  {
+    "title": "LangGraph Agent 框架",
+    "text": "节点类型：普通函数节点、LLM 节点、工具节点（ToolNode）。\n边类型：普通边（固定路由）、条件边（LLM 判断下一步）。",
+    "source": "builtin"
+  },
+  {
+    "title": "LangGraph Agent 框架",
+    "text": "典型 Agent 模式：\n1. ReAct：Think → Act → Observe → Think → ... → Answer\n2. Plan-Execute：Plan → Execute All → Summarize\n3. Router：根据问题类型路由到不同处理链",
+    "source": "builtin"
+  },
+  {
+    "title": "LangGraph Agent 框架",
+    "text": "LangGraph 支持 checkpoint（状态持久化）、interrupt（人机协同）、streaming（流式输出）等高级特性。",
+    "source": "builtin"
+  },
+  {
+    "title": "中文金融文本信息抽取",
+    "text": "从中文年报、公告等金融文档中抽取结构化信息面临独特挑战：",
+    "source": "builtin"
+  },
+  {
+    "title": "中文金融文本信息抽取",
+    "text": "1. 单位归一化：中文财报使用\"千元\"、\"万元\"、\"亿元\"等多种口径，\n   抽取时必须统一转换为\"元\"，否则数值比较无意义。\n   例如：\"营业收入 125.80 亿元\" 应抽取为 12580000000。",
+    "source": "builtin"
+  },
+  {
+    "title": "中文金融文本信息抽取",
+    "text": "2. 表格解析：A 股年报大量使用跨页表格、合并单元格，\n   pdfplumber 等工具在提取时会产生错位、断行等问题。",
+    "source": "builtin"
+  },
+  {
+    "title": "中文金融文本信息抽取",
+    "text": "3. 拒答场景：很多字段（如自由现金流）并非所有公司都披露，\n   系统必须能识别\"未单独披露\"等语义否定，而非强行抽取。",
+    "source": "builtin"
+  },
+  {
+    "title": "中文金融文本信息抽取",
+    "text": "4. 评测需要字段级粒度：17 个字段各有不同难度，macro F1 对低频字段更公平，\n   还应引入拒答准确率、单位错误率等专项指标。",
+    "source": "builtin"
+  }
+]

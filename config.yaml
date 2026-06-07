@@ -1,0 +1,56 @@
+# ============================================================
+# Research Assistant Agent 配置文件
+# ============================================================
+
+# --- LLM 配置（Ollama 本地模型）---
+llm:
+  provider: ollama            # ollama | openai_compatible
+  model_name: qwen2.5:1.5b-instruct  # 已有；推荐升级到 3b 获得更好推理
+  base_url: http://127.0.0.1:11434/v1
+  temperature: 0.0            # 工具调用场景用 0 保证确定性
+  max_tokens: 2048
+  timeout: 60                 # 请求超时（秒）
+
+# --- Agent 编排 ---
+agent:
+  max_iterations: 4           # 最多 Plan→Execute→Observe→Reflect 轮次
+  max_tool_calls_per_turn: 3  # 单轮最多并行调用几个工具
+  enable_reflection: true     # 是否启用反思节点
+
+# --- 工具配置 ---
+tools:
+  web_search:
+    enabled: true
+    provider: duckduckgo      # 免费，无需 API key
+    max_results: 5
+    timeout: 10               # 搜索超时（秒）
+
+  python_repl:
+    enabled: true
+    timeout: 5                # 代码执行超时（秒）
+    max_output_chars: 2000    # 截断过长的输出
+    allowed_modules: []       # 空 = 允许所有标准库；可限制为 ["math", "json", "re"]
+
+  file_reader:
+    enabled: true
+    allowed_dirs:             # 白名单目录（安全）
+      - "./data"
+      - "./artifacts"
+    max_file_size_kb: 512
+    allowed_extensions: [".txt", ".md", ".json", ".csv", ".py", ".yaml", ".log"]
+
+  vector_search:
+    enabled: true
+    index_dir: "./data/vector_index"
+    top_k: 5
+    embed_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    min_score: 0.3            # 低于此分数的结果丢弃
+
+# --- 前端 ---
+ui:
+  gradio:
+    title: "Research Assistant Agent"
+    theme: "soft"
+    port: 7862
+    share: false
+    max_history: 20           # 会话历史保留条数

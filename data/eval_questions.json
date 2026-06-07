@@ -1,0 +1,225 @@
+{
+  "description": "Research Assistant Agent 评测集 — 覆盖单工具、多工具、边界场景",
+  "version": 1,
+  "questions": [
+    {
+      "id": "Q001",
+      "category": "single_tool_web",
+      "question": "2024 年诺贝尔物理学奖得主是谁？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["霍普菲尔德", "辛顿", "神经网络", "机器学习"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q002",
+      "category": "single_tool_web",
+      "question": "Python 3.13 版本有什么新特性？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["JIT", "GIL", "可选"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q003",
+      "category": "single_tool_python",
+      "question": "帮我用 Python 算一下 1 到 100 的所有质数之和",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["1060"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q004",
+      "category": "single_tool_python",
+      "question": "写 Python 代码计算圆的面积，半径为 7.5",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["176", "π"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q005",
+      "category": "single_tool_web",
+      "question": "介绍一下 LangGraph 是什么",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["Agent", "图", "状态机", "节点"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q006",
+      "category": "multi_tool",
+      "question": "搜索一下当前比特币价格，然后用 Python 换算成人民币（汇率按 7.25 算）",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["元", "人民币"],
+      "min_tool_calls": 2
+    },
+    {
+      "id": "Q007",
+      "category": "multi_tool",
+      "question": "Transformer 论文是哪年发表的？搜索确认后，用 Python 算一下距离 2026 年已经多少年了",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["2017", "9"],
+      "min_tool_calls": 2
+    },
+    {
+      "id": "Q008",
+      "category": "single_tool_web",
+      "question": "什么是 RAG（检索增强生成）？它有哪些优点？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["检索", "生成", "知识库", "幻觉"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q009",
+      "category": "single_tool_python",
+      "question": "用 Python 生成 10 个随机数并排序",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["["],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q010",
+      "category": "boundary",
+      "question": "明天地球会毁灭吗",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": [],
+      "min_tool_calls": 1,
+      "note": "Agent 应该搜索但可能找不到确切答案，应诚实回复"
+    },
+    {
+      "id": "Q011",
+      "category": "single_tool_web",
+      "question": "LoRA 微调中的 rank 参数是什么意思？一般设多大？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["低秩", "8", "16", "分解"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q012",
+      "category": "single_tool_python",
+      "question": "写一段 Python 代码，统计 'hello world hello python' 中每个单词的出现次数",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["hello", "2", "world", "1"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q013",
+      "category": "multi_tool",
+      "question": "搜索 Qwen2.5 模型的参数量，然后用 Python 把最大的参数量换算成 billion 单位",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["billion", "B"],
+      "min_tool_calls": 2
+    },
+    {
+      "id": "Q014",
+      "category": "single_tool_web",
+      "question": "2026 年 AI Agent 领域有什么最新进展？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": [],
+      "min_tool_calls": 1,
+      "note": "时效性问题，Agent 应该搜索最新信息"
+    },
+    {
+      "id": "Q015",
+      "category": "boundary",
+      "question": "asdfghjkl123456",
+      "expected_tools": [],
+      "expected_answer_contains": [],
+      "min_tool_calls": 0,
+      "note": "无意义输入，Agent 应尝试搜索或直接说明无法理解"
+    },
+    {
+      "id": "Q016",
+      "category": "single_tool_web",
+      "question": "南京大学人工智能专业的培养方案是什么？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["课程", "培养", "学分"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q017",
+      "category": "single_tool_python",
+      "question": "用 Python 验证哥德巴赫猜想对于小于 50 的偶数是否成立",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["True", "成立", "质数"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q018",
+      "category": "multi_tool",
+      "question": "查询 PyTorch 最新稳定版本号，然后用 Python 创建一个对应版本的 tensor 并打印",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["tensor"],
+      "min_tool_calls": 2
+    },
+    {
+      "id": "Q019",
+      "category": "single_tool_web",
+      "question": "介绍一下 FAISS 向量数据库的基本原理",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["索引", "向量", "相似度", "聚类"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q020",
+      "category": "single_tool_python",
+      "question": "用 Python 读取当前目录下的 config.yaml 文件并打印它的内容",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": [],
+      "min_tool_calls": 1,
+      "note": "测试 Python 执行，输出应包含 config.yaml 的某些内容"
+    },
+    {
+      "id": "Q021",
+      "category": "single_tool_web",
+      "question": "什么是 MCP（Model Context Protocol）？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": ["协议", "工具", "上下文", "Anthropic"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q022",
+      "category": "multi_tool",
+      "question": "搜索 Claude Code 是什么工具，然后用 Python 统计这段描述有多少个字符",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["字符", "长度"],
+      "min_tool_calls": 2
+    },
+    {
+      "id": "Q023",
+      "category": "single_tool_web",
+      "question": "2025 年中国 GDP 增速是多少？",
+      "expected_tools": ["web_search"],
+      "expected_answer_contains": [],
+      "min_tool_calls": 1,
+      "note": "事实查询，Agent 应搜索并给出数据"
+    },
+    {
+      "id": "Q024",
+      "category": "single_tool_python",
+      "question": "用 Python 实现一个简单的二分查找算法并测试",
+      "expected_tools": ["python_repl"],
+      "expected_answer_contains": ["找到", "索引"],
+      "min_tool_calls": 1
+    },
+    {
+      "id": "Q025",
+      "category": "boundary",
+      "question": "请同时用 web_search 和 python_repl 帮我解决：搜索"光速"的数值，然后用 Python 计算光在 1 纳秒内传播多少米",
+      "expected_tools": ["web_search", "python_repl"],
+      "expected_answer_contains": ["0.299", "299792458"],
+      "min_tool_calls": 2
+    }
+  ],
+  "metrics": {
+    "tool_selection_accuracy": {
+      "description": "Agent 调用的工具集合是否包含期望工具（至少一个）",
+      "formula": "TP / total"
+    },
+    "task_completion_rate": {
+      "description": "最终答案是否包含至少一个期望关键词",
+      "formula": "部分匹配 / total"
+    },
+    "tool_efficiency": {
+      "description": "实际工具调用次数 / 最小所需调用次数（越低越好）",
+      "formula": "avg(actual/min)"
+    }
+  }
+}
