@@ -48,9 +48,9 @@ class ToolSpec:
 def _web_search(query: str, max_results: int = 5, timeout: int = 10) -> ToolResult:
     """DuckDuckGo 网页搜索。"""
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
     except ImportError:
-        return ToolResult("web_search", False, "", error="duckduckgo-search 未安装")
+        return ToolResult("web_search", False, "", error="ddgs 未安装，请执行 pip install ddgs")
 
     try:
         with DDGS() as ddgs:

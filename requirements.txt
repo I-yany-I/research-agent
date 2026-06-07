@@ -10,7 +10,7 @@ openai>=1.0.0          # Ollama 兼容 OpenAI API
 httpx>=0.27.0
 
 # 工具依赖
-duckduckgo-search>=6.0.0
+ddgs>=8.0.0
 
 # 向量检索
 faiss-cpu>=1.8.0
