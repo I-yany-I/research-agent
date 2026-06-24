@@ -62,36 +62,43 @@ class AgentState:
 # System Prompt 模板
 # ---------------------------------------------------------------------------
 
-_SYSTEM_PROMPT = """你是一个研究助理 Agent，可以通过调用工具来获取信息并回答用户问题。
+_SYSTEM_PROMPT = """你是一个研究助理 Agent。你的核心原则是：**所有信息必须通过调用工具获取，绝对不能凭记忆或训练数据直接回答。**
 
 ## 行为规则
 
 1. 分析用户问题，判断需要调用哪些工具。
-2. 每次只调用 **一个** 最需要的工具。工具返回结果后，判断信息是否足够。
-3. 如果信息不足，继续调用工具（可能需要不同的搜索词或不同的工具）。
-4. 已有足够信息时，给出最终答案。
-5. 如果经过多次尝试仍无法获取所需信息，诚实告知用户。
+2. **即使你知道答案，也必须调用工具来验证**。不调用工具就直接回答 = 失败。
+3. 每次只调用 **一个** 最需要的工具。工具返回结果后，判断信息是否足够。
+4. 如果信息不足，继续调用工具（可能需要不同的搜索词或不同的工具）。
+5. 已有足够信息时，给出最终答案。
+6. 如果经过多次尝试仍无法获取所需信息，诚实告知用户。
 
 {}
 
-## 输出格式
+## 输出格式（必须严格遵守，格式错误会导致工具调用失败）
 
-调用工具时，严格按以下格式输出（只输出这个，不要加解释）:
+**调用工具时**，只输出以下 XML 块，不要添加任何解释文字：
 
 <tool_call>
-<name>工具名称</name>
+<name>web_search</name>
 <args>
-{{"参数名": "参数值"}}
+{{"query": "你的搜索关键词"}}
 </args>
 </tool_call>
 
-给出最终答案时，严格按以下格式输出:
+**给出最终答案时**，只输出以下格式：
 
 <final_answer>
-你的完整回答（引用工具返回的具体信息）
+基于工具返回的信息，给出完整回答。
 </final_answer>
 
-现在开始。"""
+## 重要提醒
+
+- 如果上一条消息提示"格式不正确"，请仔细检查你有没有输出 XML 标签
+- 不要在 <tool_call> 或 <final_answer> 之外添加任何文字
+- python_repl 的 args 中 code 字段必须是完整可执行的 Python 代码
+
+现在开始回答用户的问题。记住：先调工具，再回答。"""
 
 
 # ---------------------------------------------------------------------------
@@ -110,27 +117,99 @@ def _parse_tool_call(text: str) -> Optional[Tuple[str, Dict[str, Any]]]:
     Returns:
         (tool_name, args_dict) 或 None
     """
-    m = re.search(r"<tool_call>\s*<name>(.*?)</name>\s*<args>(.*?)</args>\s*</tool_call>", text, re.DOTALL)
-    if not m:
-        return None
-
-    tool_name = m.group(1).strip()
-    args_str = m.group(2).strip()
-
-    try:
-        args = json.loads(args_str)
-    except json.JSONDecodeError:
-        # 尝试修复常见错误：单引号替换、尾部逗号
-        cleaned = args_str.replace("'", '"')
-        cleaned = re.sub(r",\s*}", "}", cleaned)
+    def _parse_args(args_str: str) -> Optional[Dict[str, Any]]:
         try:
-            args = json.loads(cleaned)
+            args = json.loads(args_str)
         except json.JSONDecodeError:
+            # 尝试修复常见错误：单引号替换、尾部逗号
+            cleaned = args_str.replace("'", '"')
+            cleaned = re.sub(r",\s*}", "}", cleaned)
+            try:
+                args = json.loads(cleaned)
+            except json.JSONDecodeError:
+                return None
+        if not isinstance(args, dict):
             return None
+        return args
 
-    if not isinstance(args, dict):
+    def _infer_tool_name(raw_name: str, args: Dict[str, Any], full_text: str) -> str:
+        """在模型输出非标准工具名时，根据名称/参数进行兜底推断。"""
+        lower_name = raw_name.lower()
+        lower_text = full_text.lower()
+
+        if raw_name in known_tools:
+            return raw_name
+        if "code" in args:
+            return "python_repl"
+        if "path" in args:
+            return "file_reader"
+        if "query" in args:
+            if "vector" in lower_name or "vector" in lower_text:
+                return "vector_search"
+            if "search" in lower_name or "web" in lower_name or "search" in lower_text:
+                return "web_search"
+
+        return raw_name
+
+    known_tools = ("web_search", "python_repl", "file_reader", "vector_search")
+
+    m = re.search(r"<tool_call>\s*<name>(.*?)</name>\s*<args>(.*?)</args>\s*</tool_call>", text, re.DOTALL)
+    if m:
+        tool_name = m.group(1).strip()
+        args_str = m.group(2).strip()
+    else:
+        # 兼容部分小模型输出：
+        # 1) <tool_call>\nweb_search\n{...}\n</tool_call>
+        # 2) <tool_call>web_search\n{}\n</tool_call>
+        m_simple = re.search(r"<tool_call>\s*(.*?)\s*</tool_call>", text, re.DOTALL)
+        if m_simple:
+            body = m_simple.group(1).strip()
+            lines = [ln.strip() for ln in body.splitlines() if ln.strip()]
+            first_line = lines[0] if lines else ""
+            if first_line in known_tools:
+                tool_name = first_line
+                # 取第一个 JSON object 作为参数
+                json_match = re.search(r"\{.*?\}", body, re.DOTALL)
+                if not json_match:
+                    return None
+                args_str = json_match.group(0).strip()
+            else:
+                # 不是已知工具名，继续尝试其他兼容格式
+                m_simple = None
+        if not m_simple:
+            # 兼容部分小模型输出：<web_search>{...}</web_search>
+            m2 = re.search(r"<(web_search|python_repl|file_reader|vector_search)>\s*(\{.*?\})\s*</\1>", text, re.DOTALL)
+            if m2:
+                tool_name = m2.group(1).strip()
+                args_str = m2.group(2).strip()
+            else:
+                # 兼容输出：自然语言 + <args>{...}</args>
+                m3 = re.search(r"<args>\s*(\{.*?\})\s*</args>", text, re.DOTALL)
+                # 优先用已知工具名；否则提取最外层标签名，后续再做推断映射
+                tool_name = next((t for t in known_tools if t in text), "")
+                if not tool_name:
+                    outer = re.search(r"<([a-zA-Z_][\w]*)>.*?</\1>", text, re.DOTALL)
+                    tool_name = outer.group(1).strip() if outer else ""
+                if not m3 or not tool_name:
+                    # 兼容输出：纯文本 "tool_name + JSON"
+                    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+                    first_line = lines[0] if lines else ""
+                    if first_line in known_tools:
+                        tool_name = first_line
+                        json_match = re.search(r"\{.*?\}", text, re.DOTALL)
+                        if not json_match:
+                            return None
+                        args_str = json_match.group(0).strip()
+                    else:
+                        return None
+                else:
+                    args_str = m3.group(1).strip()
+
+    args = _parse_args(args_str)
+    if args is None:
         return None
 
+    tool_name = _infer_tool_name(tool_name, args, text)
     return tool_name, args
 
 
@@ -223,8 +302,8 @@ class ResearchAgent:
         state = AgentState.from_dict(state_dict)
 
         # 构建消息列表
-        if state.iteration == 0:
-            # 首轮：system prompt + user query
+        if state.iteration == 0 and not state.messages:
+            # 真正首轮：system prompt + user query
             tools_desc = self.tools.system_prompt_tools()
             system = _SYSTEM_PROMPT.format(tools_desc)
             messages = [
@@ -232,7 +311,7 @@ class ResearchAgent:
                 {"role": "user", "content": state.query},
             ]
         else:
-            # 后续轮次：在已有 messages 基础上追加工具结果
+            # 后续轮次（含格式修正重试）：沿用历史 messages
             messages = list(state.messages)
 
         # 调用 LLM
@@ -241,10 +320,14 @@ class ResearchAgent:
         # 更新 message 历史
         messages.append({"role": "assistant", "content": response})
 
-        new_state = {
-            "messages": messages,
-            "iteration": state.iteration,
-        }
+        # 保留已有字段（尤其是 tool_call_history），仅更新本轮变更
+        new_state = state.to_dict()
+        new_state.update(
+            {
+                "messages": messages,
+                "iteration": state.iteration,
+            }
+        )
 
         return new_state
 
@@ -269,7 +352,8 @@ class ResearchAgent:
             )
             messages = list(state.messages)
             messages.append({"role": "user", "content": err_msg})
-            return {"messages": messages, "iteration": state.iteration}
+            # 解析失败也计入一次迭代，避免在极端情况下无限循环
+            return {"messages": messages, "iteration": state.iteration + 1}
 
         tool_name, args = parsed
         result: ToolResult = self.tools.call(tool_name, **args)
@@ -325,12 +409,19 @@ class ResearchAgent:
         if state.iteration >= state.max_iterations:
             return "end"
 
+        # 在未达到上限时，若最后一条 assistant 可解析为工具调用则进入 tools
+        for m in reversed(state.messages):
+            if m.get("role") == "assistant":
+                content = m.get("content", "")
+                if _parse_tool_call(content):
+                    return "tools"
+                break
+
         # 检查是否刚刚追加了格式纠正提示（避免死循环）
-        # 如果最近两条 user 消息都是格式纠正 → 强制结束
-        format_corrections = 0
-        for m in state.messages:
-            if m.get("role") == "user" and "格式不正确" in m.get("content", ""):
-                format_corrections += 1
+        # 只有“累计两次纠正且最后一条 assistant 仍不可解析”才结束
+        format_corrections = sum(
+            1 for m in state.messages if m.get("role") == "user" and "格式不正确" in m.get("content", "")
+        )
         if format_corrections >= 2:
             return "end"
 

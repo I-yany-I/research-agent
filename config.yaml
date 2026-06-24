@@ -5,7 +5,7 @@
 # --- LLM 配置（Ollama 本地模型）---
 llm:
   provider: ollama            # ollama | openai_compatible
-  model_name: qwen2.5:1.5b-instruct  # 已有；推荐升级到 3b 获得更好推理
+  model_name: qwen2.5:3b-instruct  # 已有；推荐升级到 3b 获得更好推理
   base_url: http://127.0.0.1:11434/v1
   temperature: 0.0            # 工具调用场景用 0 保证确定性
   max_tokens: 2048
