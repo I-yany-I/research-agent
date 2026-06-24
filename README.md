@@ -1,20 +1,7 @@
 # Research Assistant Agent — 基于 LangGraph 的多工具智能体
 
 > 一个真正能调用外部工具（网页搜索、Python 执行、文件读取、向量检索）的研究助理 Agent。
-> 基于 LangGraph 状态机编排，Ollama 本地部署 Qwen2.5 驱动推理。面向 **AI Agent / 大模型应用开发** 岗位的作品集项目。
-
-[校园文本 RAG](https://github.com/I-yany-I/nju-campus-kb-rag) ｜ [金融年报结构化抽取](https://github.com/I-yany-I/finrep-ie-llm)
-
----
-
-## TL;DR — 这个项目解决什么问题
-
-| 问题 | 本项目如何解决 |
-|------|---------------|
-| 大多数学生 Agent 项目只有「检索→改写→再检索」 | 实现 **4 类真实工具**（搜索、代码执行、文件读取、向量检索），不依赖 API 模拟 |
-| 小模型（1.5B-3B）很难稳定调用工具 | 设计**结构化文本协议**（`<tool_call>` / `<final_answer>` 标签），不依赖 Function Calling API |
-| Agent 评测往往只看最终答案 | 评测覆盖 **工具选择准确率 + 任务完成率 + 内容匹配度**，可复现 |
-| 项目难以在面试中讲故事 | 从「为什么不用 Function Calling」到「错误恢复机制」都有清晰的设计决策 |
+> 基于 LangGraph 状态机编排，Ollama 本地部署 Qwen2.5 驱动推理。
 
 ---
 
@@ -164,44 +151,6 @@ python evaluate.py --ids Q001 Q003 Q007
 
 ---
 
-## 关键设计决策（面试必问）
-
-### 1. 为什么不用 LangChain 的 AgentExecutor？
-
-LangChain 的 `create_react_agent` + `AgentExecutor` 依赖模型的 Function Calling 能力。实测 Qwen2.5-1.5B 在 Function Calling 格式下的 JSON 合法率约 60-70%，而文本标签协议可达 90%+。手动实现 LangGraph 状态机虽然代码多几十行，但**对小模型更友好、排障更清晰**。
-
-### 2. 为什么限制 4 轮迭代？
-
-实测大多数任务 1-2 轮即完成。4 轮是安全上限——超过 4 轮通常意味着 Agent 陷入了「搜索→找不到→换词再搜→还是找不到」的死循环。超过上限后强制输出，并告知用户「部分信息未能获取」。
-
-### 3. 工具调用失败的恢复策略？
-
-- 解析失败 → 追加格式纠正提示，给 LLM 一次修正机会
-- 工具执行失败 → 反馈具体错误信息，LLM 可以换工具或换参数
-- 连续两次格式错误 → 强制终止，避免无限循环
-
-### 4. Python 代码执行的安全性？
-
-- subprocess 子进程隔离（非 eval/exec）
-- 5 秒 timeout 防止死循环
-- 输出截断 2000 字符防止刷屏
-- 临时文件执行完毕后自动清理
-
----
-
-## 与另两个项目的差异
-
-| | research-agent（本项目） | nju-campus-kb-rag | finrep-ie-llm |
-|--|--|--|--|
-| 核心能力 | **多工具 Agent 编排** | 文本混合检索 + 生成 | 结构化信息抽取 |
-| 编排 | LangGraph 状态机 | 顺序流水线 | 顺序流水线 |
-| 工具调用 | 4 类真实工具 | 无外部工具 | 无外部工具 |
-| 训练 | 仅推理 | LoRA 可选 | 完整 LoRA-SFT |
-| 评测 | 工具选择 + 任务完成 + 内容匹配 | 引用命中率 + 拒答率 | 字段级 P/R/F1 × 5 指标 |
-| 关键模型 | Qwen2.5 (Ollama) | BM25+SBERT+CE+Qwen2 | Qwen2.5 + LoRA |
-
----
-
 ## 目录结构
 
 ```
@@ -224,18 +173,6 @@ research-agent/
 └── artifacts/
     └── results/         # 评测报告（.json / .md）
 ```
-
----
-
-## 简历段落（建议）
-
-> **Research Assistant Agent — 基于 LangGraph 的多工具智能体** — [GitHub](https://github.com/I-yany-I/research-agent)
->
-> 实现一个能根据用户问题自主规划、调用外部工具（网页搜索 / Python 执行 / 文件读取 / 向量检索）、反思并迭代的 Agent 系统。
-> - **LangGraph 状态机**：实现 `agent`（推理→决策）→ `tools`（解析→执行→反馈）→ 条件循环的完整 Agent 闭环；最大迭代次数控制 + 格式错误恢复 + 连续失败保护。
-> - **工具系统**：4 类工具全部真实实现——DuckDuckGo 网页搜索（免费 / 无 API key）、subprocess 沙箱 Python 执行（timeout + 输出截断）、白名单路径文件读取、FAISS 向量检索（自动建索引）；每类工具失败有独立恢复策略。
-> - **小模型适配**：Qwen2.5-1.5B/3B 级别模型在 Function Calling JSON 格式下不稳定 → 设计结构化文本标签协议（`<tool_call>` / `<final_answer>`），解析器带容错（单引号替换、尾部逗号修复），将工具调用成功率从 ~65% 提升至 90%+。
-> - **CLI + Gradio 双入口**；自建 **25 题**评测集覆盖单工具 / 多工具 / 边界场景，评测工具选择准确率 + 任务完成率 + 内容匹配度。
 
 ---
 
